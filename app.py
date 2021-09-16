@@ -74,13 +74,35 @@ def stations():
     stations = list(np.ravel(results))
     return jsonify(stations=stations)
 
+# create route and  temp_monthy() function 
+@app.route("/api/v1.0/tobs")
+def temp_monthly():
+    prev_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+    # query the primary station for all the temperature observations from the previous year.
+    # and unravel the results into a one-dimensional array and convert that array into a list
+    results = session.query(Measurement.tobs).\
+      filter(Measurement.station == 'USC00519281').\
+      filter(Measurement.date >= prev_year).all()
+    temps = list(np.ravel(results))
+    return jsonify(temps=temps)
 
+# Create a minimum, average, and maximum temperatures route(s) & function stats ()
+# Note: in the following code, take note of the asterisk in the query next to the
+# sel list. Here the asterisk is used to indicate there will be multiple results 
+# for our query: minimum, average, and maximum temperatures.
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+def stats(start=None, end=None):
+    sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
 
+    if not end:
+        results = session.query(*sel).\
+            filter(Measurement.date >= start).all()
+        temps = list(np.ravel(results))
+        return jsonify(temps)
 
-
-
-
-
-
-
-
+    results = session.query(*sel).\
+        filter(Measurement.date >= start).\
+        filter(Measurement.date <= end).all()
+    temps = list(np.ravel(results))
+    return jsonify(temps=temps)
